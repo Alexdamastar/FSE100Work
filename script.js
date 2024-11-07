@@ -1,20 +1,67 @@
-let screen = 'menu'; // This will track which screen is active
-let bgImage; // Variable to store the background image
-let logImage; // Variable to store the log image
-let customFont; // Variable to store the custom font
+let screen = 'menu'; // Track which screen is active
+let bgImage, bgScreen1, bgRedirect, bgScreen2, logImage; // Background and UI images
+let customFont; // Custom font variable
+let appleImage, orangeImage, bananaImage; // Fruit images for level 1
+let chime, error; // Sound effects for interactions
+let titlesScreen1 = []; // Array to store draggable title objects
+let titlesScreen2 = [];
+let timeoutId; // Timeout ID for screen transitions
+let matchCount = 0; // Counter for matched items
+let level2Items = []; // Array for draggable items in level 2
+let currentShapeIndex = 0; // Track the current shape index
+let shapes = []; // Array to hold the shapes
+let isTracing = false; // Flag to check if tracing is active
+let trail = []; // Array to store the trail points
+let dotCompletionCount = 0; // Counter for dot completion;
+
+
+// Position mappings for items in level 2
+const level2Matches = {
+  'Carrot': { x: 50, y: 50 },
+  'Corn': { x: 150, y: 150 },
+  'Tomato': { x: 250, y: 250 }
+};
 
 function preload() {
-  bgImage = loadImage('Back1.jpg'); // Load your background image
-  logImage = loadImage('file.png'); // Load the log image for buttons
-  customFont = loadFont('KumarOne-Regular.ttf'); // Load your custom font
+  bgImage = loadImage('Back1.jpg');
+  bgScreen1 = loadImage('Back2.jpg');
+  bgRedirect = loadImage('RedirectPage.jpg');
+  bgScreen2 = loadImage('Back3.png');
+  logImage = loadImage('file.png');
+  customFont = loadFont('KumarOne-Regular.ttf');
+
+  appleImage = loadImage('apple.png');
+  orangeImage = loadImage('neworange.jpg');
+  bananaImage = loadImage('newbanana.jpg');
+
+  let carrotImage = loadImage('carrot.jpg');
+  let cornImage = loadImage('corn.jpg');
+  let tomatoImage = loadImage('tomato.jpg');
+
+  level2Items.push({ img: carrotImage, label: 'Carrot', x: random(50, 350), y: random(50, 350), dragging: false });
+  level2Items.push({ img: cornImage, label: 'Corn', x: random(50, 350), y: random(50, 350), dragging: false });
+  level2Items.push({ img: tomatoImage, label: 'Tomato', x: random(50, 350), y: random(50, 350), dragging: false });
+
+  chime = loadSound('chime.mp3');
+  error = loadSound('error.mp3');
 }
 
 function setup() {
-  createCanvas(400, 400); // Set the canvas size to 400x400
+  createCanvas(400, 400);
+
+  titlesScreen1.push(new DraggableTitle('Apple', 50, 50));
+  titlesScreen1.push(new DraggableTitle('Orange', 50, 100));
+  titlesScreen1.push(new DraggableTitle('Banana', 50, 150));
+
+  // Align titles in screen 2 with the images
+  titlesScreen2.push(new DraggableTitle('Carrot', 50, 50));   // Carrot aligned with image (50, 50)
+  titlesScreen2.push(new DraggableTitle('Corn', 50, 150));     // Corn aligned with image (150, 150)
+  titlesScreen2.push(new DraggableTitle('Tomato', 50, 250));   // Tomato aligned with image (250, 250)
 }
 
+
 function draw() {
-  background(255); // Default background
+  background(255);
 
   if (screen === 'menu') {
     showMenu();
@@ -22,99 +69,499 @@ function draw() {
     showScreen1();
   } else if (screen === 'screen2') {
     showScreen2();
-  } else if (screen === 'screen3') {
-    showScreen3();
+  } else if (screen === 'redirection') {
+    showRedirectionScreen();
+  }
+  else if (screen === 'blankScreen') {
+    showBlankScreen();
   }
 }
 
 function showMenu() {
-  // Maintain the aspect ratio of the image while fitting it within the canvas
-  let aspectRatio = bgImage.width / bgImage.height;
-  let imgWidth, imgHeight;
-
-  if (aspectRatio > 1) { // Image is wider than tall
-    imgWidth = width;
-    imgHeight = width / aspectRatio;
-  } else { // Image is taller than wide or square
-    imgHeight = height;
-    imgWidth = height * aspectRatio;
-  }
-
-  // Center the image on the canvas
-  let imgX = (width - imgWidth) / 2;
-  let imgY = (height - imgHeight) / 2;
-  image(bgImage, imgX, imgY, imgWidth, imgHeight); // Display the image while maintaining aspect ratio
+  isTracing = false; // Reset tracing flag
+  trail = []; // Clear the trail points
+  background(bgImage);
 
   textAlign(CENTER, CENTER);
   textSize(32);
-  textFont(customFont); // Set the custom font
-  fill(255); // Change text color to white so it stands out against the background
-  text("Menu", width / 2, height / 4 - 20); // Title (Adjusted y-coordinate)
+  textFont(customFont);
+  fill(255);
+  text("Menu", width / 2, height / 4 - 20);
 
-  // Horizontal position for centered buttons
-  let centerX = (width - 200) / 2; // 200 is the button width
-
-  // Button 1
-  if (button(centerX, 100, "Screen 1")) {
+  if (button((width - 200) / 2, height / 2 - 60, "Screen 1")) {
     screen = 'screen1';
   }
 
-  // Button 2
-  if (button(centerX, 200, "Screen 2")) {
-    screen = 'screen2';
+  if (button((width - 200) / 2, height / 2, "Screen 2")) {
+    screen = 'blankScreen';
   }
 
-  // Button 3
-  if (button(centerX, 300, "Screen 3")) {
+  if (button((width - 200) / 2, height / 2 + 60, "Screen 3")) {
     screen = 'screen3';
   }
 }
 
-function button(x, y, label) {
-  // Draw the log image as the button
-  image(logImage, x, y, 200, 80); // Size the log image to fit as a button (200x80)
+function showScreen1() {
+  background(bgScreen1);
 
-  // Draw text on top of the log image
-  fill(255); // White text for better contrast
-  textSize(18); // Smaller text size to fit the button
-  textFont(customFont); // Set the custom font for the button text
-  textAlign(CENTER, CENTER); // Center the text within the button
-  text(label, x + 100, y + 40); // Center the text inside the log (200x80)
+  image(appleImage, 250, 50, 100, 100);
+  image(orangeImage, 250, 160, 100, 100);
+  image(bananaImage, 250, 270, 100, 100);
 
-  // Check if the mouse is over the button and clicked
-  if (mouseIsPressed && mouseX > x && mouseX < x + 200 && mouseY > y && mouseY < y + 80) {
-    return true;
-  } else {
-    return false;
+  let allCorrect = true;
+
+  for (let title of titlesScreen1) {
+    title.update();
+    title.display();
+
+    if (title.isCorrect()) {
+      if (!title.correctlyPlaced) {
+        chime.play();
+        matchCount++;
+      }
+      title.correctlyPlaced = true;
+      title.glow();
+    } else if (title.isWrong()) {
+      error.play();
+      title.correctlyPlaced = false;
+    }
+
+    if (!title.correctlyPlaced) {
+      allCorrect = false;
+    }
+  }
+
+  if (allCorrect) {
+    setTimeout(() => {
+      screen = 'screen2';
+    }, 1000);
+  }
+
+  textSize(20);
+  fill(255, 255, 0);
+  text(`Matches: ${matchCount}`, 10, 30); // Correctly displaying match count
+
+}
+
+function showScreen2() {
+  background(bgScreen2);
+
+  // Track if all items are correctly placed
+  let allCorrect = true;
+
+  // Draw images for level 2 items at their correct positions
+  for (const [label, position] of Object.entries(level2Matches)) {
+    const item = level2Items.find(item => item.label === label);
+    if (item) {
+      image(item.img, position.x, position.y, 80, 80);
+    }
+  }
+
+  // Update each title's position and check for correct placements
+  for (let title of titlesScreen2) {
+    title.update();
+    title.display();
+
+    // Check if title is correctly placed on a level 2 image
+    if (title.isCorrect()) {
+      if (!title.correctlyPlaced) {
+        chime.play();
+        matchCount++;
+      }
+      title.correctlyPlaced = true;
+      title.glow();  // Show title with glow effect when matched
+    } else {
+      title.correctlyPlaced = false;
+      allCorrect = false;  // Set to false if any item is incorrectly placed
+    }
+  }
+
+  // Move to the redirection screen only when all items are matched correctly
+  allCorrect = titlesScreen2.every(title => title.correctlyPlaced);
+  if (allCorrect) {
+    setTimeout(() => {
+      screen = 'redirection';
+    }, 1000); // Delay of 1 second before transitioning
   }
 }
 
-// Screen 1
-function showScreen1() {
-  background(100, 150, 255);
+function showBlankScreen() {
+  background(240); // A light gray background for the blank screen
+  image(bgImage, 0, 0, width, height);
+  fill(200); // Light gray button
+  noStroke();
+  rect(10, 10, 50, 30); // Button rectangle
+  fill(0); // Black text
+  textSize(14);
   textAlign(CENTER, CENTER);
-  textSize(32);
-  textFont(customFont); // Set the custom font
-  fill(255);
-  text("Screen 1", width / 2, height / 2);
+  text("Home", 35, 25); // Text in the center of the button
+
+  // Check for Home button click
+  if (mouseIsPressed && mouseX > 10 && mouseX < 60 && mouseY > 10 && mouseY < 40) {
+    resetTracing(); // Reset tracing states
+    screen = 'menu'; // Change the screen to menu
+  }
+
+  // Your existing shape logic
+  if (shapes.length === 0) {
+    shapes.push({
+      type: 'circle',
+      x: width / 2,
+      y: height / 2,
+      radius: 50,
+      dots: generateDots(width / 2, height / 2, 50)
+    });
+    shapes.push({
+      type: 'rectangle',
+      x1: width / 2 - 50,
+      y1: height / 2 - 50,
+      x2: width / 2 + 50,
+      y2: height / 2 - 50,
+      x3: width / 2 + 50,
+      y3: height / 2 + 50,
+      x4: width / 2 - 50,
+      y4: height / 2 + 50,
+      dots: generateRectangleDots(width / 2 - 50, height / 2 - 50, width / 2 + 50, height / 2 + 50)
+    });
+  }
+
+  let shape = shapes[currentShapeIndex];
+  noFill();
+  stroke(0);
+
+  if (shape.type === 'circle') {
+    ellipse(shape.x, shape.y, shape.radius * 2);
+  } else if (shape.type === 'rectangle') {
+    beginShape();
+    vertex(shape.x1, shape.y1);
+    vertex(shape.x2, shape.y2);
+    vertex(shape.x3, shape.y3);
+    vertex(shape.x4, shape.y4);
+    endShape(CLOSE);
+  }
+
+  stroke(0);
+  fill(0);
+  for (let dot of shape.dots) {
+    if (isDotTraced(dot)) {
+      fill(0, 255, 0);
+    } else {
+      fill(255, 0, 0);
+    }
+    ellipse(dot.x, dot.y, 10, 10);
+  }
+
+  stroke(255, 0, 0);
+  strokeWeight(2);
+  beginShape();
+  for (let pt of trail) {
+    vertex(pt.x, pt.y);
+  }
+  endShape();
+
+  if (isTracing) {
+    trail.push({ x: mouseX, y: mouseY });
+
+    // Continuously check tracing completion
+    if (checkAllDotsCovered(shape.dots)) {
+      if (isTracingComplete(shape)) {
+        isTracing = false;
+        trail = [];
+
+        if (shape.type === 'rectangle') {
+          screen = 'redirection';
+        } else {
+          currentShapeIndex++;
+          if (currentShapeIndex >= shapes.length) {
+            currentShapeIndex = 0;
+          }
+        }
+      }
+    }
+  }
+
+  textAlign(CENTER, CENTER);
+  textSize(15);
+  fill(0);
+  text("Click to start tracing, Press home to return", width / 2, height - 30);
 }
 
-// Screen 2
-function showScreen2() {
-  background(150, 200, 100);
-  textAlign(CENTER, CENTER);
-  textSize(32);
-  textFont(customFont); // Set the custom font
-  fill(255);
-  text("Screen 2", width / 2, height / 2);
+
+function drawDotsOnOutline(shape) {
+  stroke(0); // Set stroke color for the outline
+  fill(0); // Set dot color without fill
+  if (shape.type === 'circle') {
+    let numDots = 36; // Number of dots around the circle
+    for (let i = 0; i < numDots; i++) {
+      let angle = map(i, 0, numDots, 0, TWO_PI);
+      let x = shape.x + cos(angle) * shape.radius;
+      let y = shape.y + sin(angle) * shape.radius;
+      ellipse(x, y, 5, 5); // Draw dot
+    }
+  } else if (shape.type === 'rectangle') {
+    let dots = [
+      { x: shape.x1, y: shape.y1 },
+      { x: shape.x2, y: shape.y2 },
+      { x: shape.x3, y: shape.y3 }
+    ];
+
+    // Interpolating dots along the edges
+    for (let i = 0; i < dots.length; i++) {
+      let start = dots[i];
+      let end = dots[(i + 1) % dots.length]; // Wrap to first dot
+      let numDots = 10; // Number of dots per edge
+
+      for (let j = 0; j <= numDots; j++) {
+        let x = lerp(start.x, end.x, j / numDots);
+        let y = lerp(start.y, end.y, j / numDots);
+        ellipse(x, y, 5, 5); // Draw dot
+      }
+    }
+  }
 }
 
-// Screen 3
-function showScreen3() {
-  background(255, 100, 100);
+function resetTracing() {
+  isTracing = false;
+  trail = [];
+  currentShapeIndex = 0; // Reset to the first shape if needed
+}
+
+function isTracingComplete(shape) {
+  // Check if all dots have been traced
+  for (let dot of shape.dots) {
+    if (!isDotTraced(dot)) {
+      return false; // If any dot is not traced, return false
+    }
+  }
+  return true; // All dots have been traced
+}
+
+function isDotTraced(dot) {
+    const threshold = 10; // Adjust this based on your dot size and tracing accuracy
+    return trail.some(pt => dist(pt.x, pt.y, dot.x, dot.y) < threshold);
+}
+
+
+function generateDots(centerX, centerY, radius) {
+  let dots = [];
+  const numDots = 10; // Number of dots
+  for (let i = 0; i < numDots; i++) {
+    let angle = map(i, 0, numDots, 0, TWO_PI);
+    let x = centerX + cos(angle) * radius;
+    let y = centerY + sin(angle) * radius;
+    dots.push({ x: x, y: y });
+  }
+  return dots;
+}
+
+function generateRectangleDots(x1, y1, x2, y2) {
+  let dots = [];
+  const numDots = 20; // Adjust the density as needed
+  for (let i = 0; i <= numDots; i++) {
+    let ratio = i / numDots;
+    dots.push({ x: lerp(x1, x2, ratio), y: y1 }); // Top edge
+    dots.push({ x: lerp(x2, x1, ratio), y: y2 }); // Bottom edge
+    dots.push({ x: x1, y: lerp(y1, y2, ratio) }); // Left edge
+    dots.push({ x: x2, y: lerp(y1, y2, ratio) }); // Right edge
+  }
+  return dots;
+}
+
+function showRedirectionScreen() {
+  background(bgRedirect);
+
   textAlign(CENTER, CENTER);
   textSize(32);
-  textFont(customFont); // Set the custom font
+  textFont(customFont);
+  fill(0);
+  text("You Matched All Fruits!", width / 2, height / 4);
+
+  if (button((width - 200) / 2, 200, "Home")) {
+    clearTimeout(timeoutId);
+    timeoutId = setTimeout(() => {
+      screen = 'menu';
+    }, 1000);
+  }
+
+  if (button((width - 200) / 2, 300, "Try Again")) {
+    resetGame();
+    screen = 'screen1';
+  }
+}
+
+function resetGame() {
+  titlesScreen1 = [];
+  titlesScreen2 = [];
+  matchCount = 0;
+
+  titlesScreen1.push(new DraggableTitle('Apple', 50, 50));
+  titlesScreen1.push(new DraggableTitle('Orange', 50, 100));
+  titlesScreen1.push(new DraggableTitle('Banana', 50, 150));
+
+  titlesScreen2.push(new DraggableTitle('Carrot', 50, 50));
+  titlesScreen2.push(new DraggableTitle('Corn', 50, 100));
+  titlesScreen2.push(new DraggableTitle('Tomato', 50, 150));
+
+  level2Items.forEach(item => {
+    item.correctlyPlaced = false;
+    item.dragging = false;
+  });
+}
+
+class DraggableTitle {
+  constructor(label, x, y) {
+    this.label = label;
+    this.x = x;
+    this.y = y;
+    this.dragging = false;
+    this.offsetX = 0;
+    this.offsetY = 0;
+    this.correctlyPlaced = false;
+  }
+
+  display() {
+    textAlign(LEFT, CENTER);
+    textSize(24);
+    fill(0);
+    text(this.label, this.x, this.y);
+  }
+
+  update() {
+    if (this.dragging) {
+      this.x = mouseX + this.offsetX;
+      this.y = mouseY + this.offsetY;
+    }
+  }
+
+  mousePressed() {
+    if (mouseX > this.x && mouseX < this.x + textWidth(this.label) &&
+        mouseY > this.y - textSize() / 2 && mouseY < this.y + textSize() / 2) {
+      this.dragging = true;
+      this.offsetX = this.x - mouseX;
+      this.offsetY = this.y - mouseY;
+    }
+  }
+
+  mouseReleased() {
+    this.dragging = false;
+  }
+
+  isCorrect() {
+    let target;
+
+    if (screen === 'screen1') {
+      const matchesScreen1 = {
+        'Apple': [250, 50],
+        'Orange': [250, 160],
+        'Banana': [250, 270]
+      };
+      target = matchesScreen1[this.label];
+    } else if (screen === 'screen2') {
+      const targetItem = level2Matches[this.label];
+      if (targetItem) {
+        target = [targetItem.x, targetItem.y];
+      }
+    }
+
+    // Return true if target is defined and within the correct distance
+    return target && dist(this.x, this.y, target[0], target[1]) < 50;
+  }
+
+  isWrong() {
+    return !this.isCorrect() && !this.correctlyPlaced;
+  }
+
+  glow() {
+    fill(0, 255, 0);
+    text(this.label, this.x, this.y);
+  }
+}
+
+function button(x, y, label) {
   fill(255);
-  text("Screen 3", width / 2, height / 2);
+  rect(x, y, 200, 50, 10);
+  fill(0);
+  textAlign(CENTER, CENTER);
+  textSize(20);
+  text(label, x + 100, y + 25);
+
+  if (mouseX > x && mouseX < x + 200 && mouseY > y && mouseY < y + 50) {
+    if (mouseIsPressed) {
+      return true;
+    }
+  }
+  return false;
+}
+
+function isTracingComplete(shape) {
+  let threshold = 10; // Define a threshold for distance
+  let completed = true;
+
+  if (shape.type === 'circle') {
+    for (let pt of trail) {
+      let d = dist(pt.x, pt.y, shape.x, shape.y);
+      if (d > shape.radius + threshold) {
+        completed = false;
+        break;
+      }
+    }
+  } else if (shape.type === 'rectangle') {
+    // Calculate the distances from each point of the triangle to the trail points
+    for (let pt of trail) {
+      let d1 = dist(pt.x, pt.y, shape.x1, shape.y1);
+      let d2 = dist(pt.x, pt.y, shape.x2, shape.y2);
+      let d3 = dist(pt.x, pt.y, shape.x3, shape.y3);
+      if (d1 > threshold && d2 > threshold && d3 > threshold) {
+        completed = false;
+        break;
+      }
+    }
+  }
+
+  return completed;
+}
+
+function checkAllDotsCovered(dots) {
+    return dots.every(dot => isDotTraced(dot));
+}
+
+function checkAllDotsCovered(dots) {
+  return dots.every(dot => isDotTraced(dot)); // Check if every dot has been traced
+}
+
+function isDotCovered(dot) {
+  // Check if the dot is covered by the tracing trail
+  for (let pt of trail) {
+    if (dist(pt.x, pt.y, dot.x, dot.y) < 10) { // Check if the distance is less than a threshold
+      return true; // Dot is covered
+    }
+  }
+  return false; // Dot is not covered
+}
+
+
+function mousePressed() {
+  if (mouseX > 10 && mouseX < 60 && mouseY > 10 && mouseY < 40){
+    trail = [];
+    screen = 'menu'; // Go to home screen
+    return;
+  }
+  for (let title of titlesScreen1) {
+    title.mousePressed();
+  }
+  for (let title of titlesScreen2) {
+    title.mousePressed();
+  }
+  isTracing = true;
+  
+}
+
+function mouseReleased() {
+  for (let title of titlesScreen1) {
+    title.mouseReleased();
+  }
+  for (let title of titlesScreen2) {
+    title.mouseReleased();
+  }
+  isTracing = false;
 }
