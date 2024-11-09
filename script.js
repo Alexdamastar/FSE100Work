@@ -1,7 +1,8 @@
 let screen = 'menu'; // Track which screen is active
-let bgImage, bgScreen1, bgRedirect, bgScreen2, logImage; // Background and UI images
+let bgImage, bgScreen1, bgRedirect, bgScreen2, logImage, strawberryImage, raspberryImage, blueberryImage, blackberryImage; // Background and UI images
 let customFont; // Custom font variable
 let appleImage, orangeImage, bananaImage; // Fruit images for level 1
+let elderberryImage, hollyberryImage, jerusalemCherryImage, yewBerryImage; //Berries in screen 3
 let chime, error; // Sound effects for interactions
 let titlesScreen1 = []; // Array to store draggable title objects
 let titlesScreen2 = [];
@@ -13,6 +14,12 @@ let shapes = []; // Array to hold the shapes
 let isTracing = false; // Flag to check if tracing is active
 let trail = []; // Array to store the trail points
 let dotCompletionCount = 0; // Counter for dot completion;
+let fruits = [];
+let compartments = [];
+let correctCompartmentImage;
+let isDragging = false;
+let draggedFruit = null;
+let berrycount = 4;
 
 
 // Position mappings for items in level 2
@@ -23,10 +30,20 @@ const level2Matches = {
 };
 
 function preload() {
+  strawberryImage = loadImage('strawberry.png');
+  raspberryImage = loadImage('raspberry.png');
+  blueberryImage = loadImage('blueberry.png');
+  blackberryImage = loadImage('blackberry.png');
+  elderberryImage = loadImage('elderberry.png');
+  hollyberryImage = loadImage('hollyberry.png');
+  jerusalemCherryImage = loadImage('jerusalem cherry.png');
+  yewBerryImage = loadImage('yew berry.png');
+  correctCompartmentImage = loadImage('Checkmark.png');
   bgImage = loadImage('Back1.jpg');
   bgScreen1 = loadImage('Back2.jpg');
   bgRedirect = loadImage('RedirectPage.jpg');
   bgScreen2 = loadImage('Back3.png');
+  bgScreen3 = loadImage('Back4.jpg');
   logImage = loadImage('file.png');
   customFont = loadFont('KumarOne-Regular.ttf');
 
@@ -37,6 +54,7 @@ function preload() {
   let carrotImage = loadImage('carrot.jpg');
   let cornImage = loadImage('corn.jpg');
   let tomatoImage = loadImage('tomato.jpg');
+
 
   level2Items.push({ img: carrotImage, label: 'Carrot', x: random(50, 350), y: random(50, 350), dragging: false });
   level2Items.push({ img: cornImage, label: 'Corn', x: random(50, 350), y: random(50, 350), dragging: false });
@@ -53,10 +71,23 @@ function setup() {
   titlesScreen1.push(new DraggableTitle('Orange', 50, 100));
   titlesScreen1.push(new DraggableTitle('Banana', 50, 150));
 
-  // Align titles in screen 2 with the images
+  // Align titles in screen 2 of the first game with the images
   titlesScreen2.push(new DraggableTitle('Carrot', 50, 50));   // Carrot aligned with image (50, 50)
   titlesScreen2.push(new DraggableTitle('Corn', 50, 150));     // Corn aligned with image (150, 150)
   titlesScreen2.push(new DraggableTitle('Tomato', 50, 250));   // Tomato aligned with image (250, 250)
+  
+  // Define fruit objects using DraggableTitle
+  fruits.push(new DraggableImage(strawberryImage, 'Strawberry', 50, 50));
+  fruits.push(new DraggableImage(raspberryImage, 'Raspberry', 50, 150));
+  fruits.push(new DraggableImage(blueberryImage, 'Blueberry', 50, 250));
+  fruits.push(new DraggableImage(blackberryImage, 'Blackberry', 50, 350));
+
+  
+  // Define compartments with target coordinates
+  compartments.push({x: 250, y: 50, label: 'Strawberry'});
+  compartments.push({x: 250, y: 150, label: 'Raspberry'});
+  compartments.push({x: 250, y: 250, label: 'Blueberry'});
+  compartments.push({x: 250, y: 350, label: 'Blackberry'});
 }
 
 
@@ -74,6 +105,9 @@ function draw() {
   }
   else if (screen === 'blankScreen') {
     showBlankScreen();
+  }
+  else if (screen === 'screen3'){
+    showScreen3();
   }
 }
 
@@ -286,6 +320,41 @@ function showBlankScreen() {
   text("Click to start tracing, Press home to return", width / 2, height - 30);
 }
 
+function showScreen3() {
+  background(255);
+  image(bgScreen3, 0, 0, width, height);
+  for (let comp of compartments) {
+    fill(255);
+    stroke(0);
+    rectMode(CENTER);
+    rect(comp.x, comp.y, 60, 60);
+    fill(0);
+    textAlign(CENTER, CENTER);
+    textSize(10);
+    text(comp.label, comp.x, comp.y);
+  }
+
+  let allCorrect = true;
+
+  for (let fruit of fruits) {
+    fruit.update();
+    fruit.display();
+    for (let comp of compartments) {
+      if (fruit.isCorrect(comp)) {
+        fruit.correctlyPlaced = true;
+        fruit.glowIfCorrect();
+      } else {
+        fruit.correctlyPlaced = false;
+      }
+    }
+    allCorrect = allCorrect && fruit.correctlyPlaced;
+  }
+
+  if (allCorrect && fruits.length === berrycount) {
+    generateNewFruits();
+  }
+
+}
 
 function drawDotsOnOutline(shape) {
   stroke(0); // Set stroke color for the outline
@@ -408,6 +477,20 @@ function resetGame() {
   });
 }
 
+// Check if the fruit is placed in the correct compartment
+function isCorrectPlacement(compartment) {
+  for (let fruit of fruits) {
+    if (fruit.label === compartment.label && fruit.isCorrect()) {
+      compartment.color = 'green';  // Change the compartment color to green for correct placement
+      return true;
+    }
+  }
+  // If the placement is incorrect, set the compartment color to red
+  compartment.color = 'red';
+  return false;
+}
+
+
 class DraggableTitle {
   constructor(label, x, y) {
     this.label = label;
@@ -420,10 +503,10 @@ class DraggableTitle {
   }
 
   display() {
-    textAlign(LEFT, CENTER);
-    textSize(24);
-    fill(0);
-    text(this.label, this.x, this.y);
+      textAlign(LEFT, CENTER);
+      textSize(24);
+      fill(0);
+      text(this.label, this.x, this.y);
   }
 
   update() {
@@ -444,6 +527,8 @@ class DraggableTitle {
 
   mouseReleased() {
     this.dragging = false;
+    this.correctlyPlaced = this.isCorrect();
+    
   }
 
   isCorrect() {
@@ -461,6 +546,12 @@ class DraggableTitle {
       if (targetItem) {
         target = [targetItem.x, targetItem.y];
       }
+      else if (screen === 'screen3'){
+        const compartment = compartments.find(comp => comp.label === this.label);
+        if (compartment) {
+          target = [compartment.x, compartment.y];
+        }
+      }
     }
 
     // Return true if target is defined and within the correct distance
@@ -474,6 +565,125 @@ class DraggableTitle {
   glow() {
     fill(0, 255, 0);
     text(this.label, this.x, this.y);
+  }
+  glowIfCorrect() {
+    if (this.isCorrect()) {
+      fill(0, 255, 0, 100);  // Green overlay for correct placement
+      noStroke();
+      ellipse(this.x, this.y, 60, 60);  // Draw a glowing effect
+    }
+  }
+}
+
+class DraggableImage {
+  constructor(img, label, x, y) {
+    this.img = img;
+    this.label = label;
+    this.x = x;
+    this.y = y;
+    this.dragging = false;
+    this.correctlyPlaced = false;
+  }
+
+  display() {
+    image(this.img, this.x, this.y, 60, 60);
+  }
+
+  update() {
+    if (this.dragging) {
+      this.x = mouseX + this.offsetX;
+      this.y = mouseY + this.offsetY;
+    }
+  }
+
+  glowIfCorrect() {
+    if (this.correctlyPlaced) {
+      image(correctCompartmentImage, this.x, this.y, 60, 60); // Set the background image
+      if(checkAllCompartmentsFilled() == true)
+      {
+        resetGame3();
+      }
+  }
+  noStroke();
+  }
+
+  startDragging() {
+    if (
+      mouseX > this.x && mouseX < this.x + 60 &&
+      mouseY > this.y && mouseY < this.y + 60
+    ) {
+      this.dragging = true;
+      this.offsetX = this.x - mouseX;
+      this.offsetY = this.y - mouseY;
+    }
+  }
+  stopDragging() {
+    this.dragging = false;
+  }
+
+  isCorrect(compartment) {
+    return (
+      compartment.label === this.label &&
+      dist(this.x, this.y, compartment.x, compartment.y) < 50
+    );
+  }
+}
+
+function resetGame3() {
+    // Reset all berries
+    background(255);
+    generateNewFruits();
+    image(bgScreen3, 0, 0, width, height);
+  for (let comp of compartments) {
+    fill(255);
+    stroke(0);
+    rectMode(CENTER);
+    rect(comp.x, comp.y, 60, 60);
+    fill(0);
+    textAlign(CENTER, CENTER);
+    textSize(10);
+    text(comp.label, comp.x, comp.y);
+  }
+  
+    
+}
+
+function checkAllCompartmentsFilled() {
+  // Check if all compartments are filled with the correct fruit
+  /*let allFilled = true; // Assume all are filled initially
+
+  for (let i = 0; i < compartments.length; i++) {
+    const comp = compartments[i];
+    let isFilled = false;
+
+    // Check each fruit to see if it's placed in the correct compartment
+    for (let fruit of fruits) {
+      if (fruit.correctlyPlaced && fruit.isCorrect(comp)) {
+        isFilled = true;  // Mark as filled if the fruit is correctly placed
+        break; // Move on to the next compartment once a fruit is placed correctly
+      }
+    }
+
+    // If any compartment isn't filled, mark allFilled as false
+    if (!isFilled) {
+      allFilled = false;
+      break;  // No need to check further if one is not filled
+    }
+  }
+
+  // Return true if all compartments are filled correctly, else false
+  return allFilled;*/
+  return true;
+}
+
+
+function generateNewFruits() {
+  if (berrycount < 6){
+    fruits.push(new DraggableImage(elderberryImage,'Elder Berry',100,100));
+    fruits.push(new DraggableImage(hollyberryImage,'Hollyberry', 150,150));
+    fruits.push(new DraggableImage(jerusalemCherryImage,'Jerusalem Cherry',200,200));
+    fruits.push(new DraggableImage(yewBerryImage,'Yew Berry',250,250));
+    berrycount += 2;
   }
 }
 
@@ -552,6 +762,9 @@ function mousePressed() {
   for (let title of titlesScreen2) {
     title.mousePressed();
   }
+  for (let fruit of fruits) {
+    fruit.startDragging();
+  }
   isTracing = true;
   
 }
@@ -562,6 +775,9 @@ function mouseReleased() {
   }
   for (let title of titlesScreen2) {
     title.mouseReleased();
+  }
+  for (let fruit of fruits) {
+    fruit.stopDragging();
   }
   isTracing = false;
 }
