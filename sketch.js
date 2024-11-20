@@ -147,6 +147,7 @@ function createMenu() {
     header.textContent = "Main Menu";
     header.style.marginBottom = "20px";
     header.style.fontSize = "32px";
+    header.style.color = "yellow"
     menu.appendChild(header);
 
     const buttons = [
