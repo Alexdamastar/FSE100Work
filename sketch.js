@@ -1,3 +1,4 @@
+// Set basic styles for the document body
 document.body.style.margin = "0";
 document.body.style.overflow = "hidden";
 document.body.style.fontFamily = "'Segoe UI', Tahoma, Geneva, Verdana, sans-serif";
@@ -8,11 +9,11 @@ document.body.style.justifyContent = "center";
 document.body.style.alignItems = "center";
 document.body.style.position = "relative";
 
-
+// Retrieve the initial theme from localStorage or use 'normal' as default
 const initialTheme = localStorage.getItem('theme') || 'normal';
 applyTheme(initialTheme);
 
-
+// Function to create a full-screen YouTube video background
 function createYouTubeBackground(videoId) {
    const iframe = document.createElement('iframe');
    iframe.setAttribute('id', 'video-background');
@@ -34,7 +35,7 @@ function createYouTubeBackground(videoId) {
    document.body.appendChild(iframe);
 }
 
-
+// Function to create smaller YouTube videos in the four corners of the screen
 function createCornerVideos() {
    const videoIds = ["Q7n2BQ4zZik", "NY152bj4VO0", "melsHDqi0YA", "k9QSISkevg8"];
    const positions = ["top-left", "top-right", "bottom-left", "bottom-right"];
@@ -72,7 +73,7 @@ function createCornerVideos() {
    });
 }
 
-
+// Function to apply a theme (dark or normal) to the page
 function applyTheme(theme) {
     const menu = document.getElementById('menu');
     const videoBackground = document.getElementById('video-background');
@@ -125,7 +126,7 @@ function applyTheme(theme) {
 const currentTheme = localStorage.getItem('theme') || 'normal';
 applyTheme(currentTheme);
 
-
+// Function to create the main menu
 function createMenu() {
     const menu = document.createElement('div');
     menu.setAttribute('id', 'menu');
@@ -143,18 +144,20 @@ function createMenu() {
     menu.style.justifyContent = "space-around";
     menu.style.gap = "20px";
 
+    // Create and style the header of the menu
     const header = document.createElement('h1');
     header.textContent = "Main Menu";
     header.style.marginBottom = "20px";
     header.style.fontSize = "32px";
     menu.appendChild(header);
-
+    
+    // Define the menu buttons and their associated keys
     const buttons = [
         { name: 'Games', key: ' ' },
         { name: 'Accessibility', key: ' ' },
         { name: 'About', key: ' ' }
     ];
-
+    // Create each button dynamically
     buttons.forEach(({ name, key }) => {
         const button = document.createElement('button');
         button.textContent = `${name} ${key}`;
@@ -193,7 +196,7 @@ function createMenu() {
     document.body.appendChild(menu);
 }
 
-
+// Function to display the game selection screen
 function showGameSelection() {
     const theme = localStorage.getItem('theme') || 'normal';
     document.body.innerHTML = '';
@@ -269,7 +272,7 @@ function showGameSelection() {
    document.body.appendChild(sectionDiv);
 }
 
-
+// Function to display the accessibility settings menu
 function showAccessibilityMenu() {
     const currentTheme = localStorage.getItem('theme') || 'normal';
     document.body.innerHTML = '';
@@ -327,7 +330,8 @@ function showAccessibilityMenu() {
    sectionDiv.appendChild(backButton);
    document.body.appendChild(sectionDiv);
 }
-// Show a specific section (like About)
+
+// Show About Section
 function showSection(section) {
     document.body.innerHTML = '';
  
